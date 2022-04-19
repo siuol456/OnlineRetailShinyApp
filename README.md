@@ -14,8 +14,8 @@
 
 ## Data Source
 > - UC Irvine Machine Learning Repository
-- Data: Online Retail II
-- Donated 2019/09/21
+> - Data: Online Retail II
+> - Donated 2019/09/21
 
 ***
 ## Team Members
