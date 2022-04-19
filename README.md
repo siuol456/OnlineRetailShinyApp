@@ -1,5 +1,10 @@
 # OnlineRetailShinyApp
-# This is a team effort product. 
+## This is a team effort product. 
+
+### This repo includes two parts.
+- Data Processing
+- Shiny App
+
 
 ## Data Source
 > - UC Irvine Machine Learning Repository
