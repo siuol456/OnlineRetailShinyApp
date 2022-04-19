@@ -1,5 +1,11 @@
 # OnlineRetailShinyApp
 ## This is a team effort product. 
+## Team Members
+
+- Jun Hou
+- Kwangyul Yu
+- Qiuwei Wang
+- Yuan-Cheng Su
 
 ### This repo includes two parts.
 - Data Processing
