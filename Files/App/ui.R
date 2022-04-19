@@ -105,8 +105,8 @@ ui <-
                                      sliderTextInput(
                                        inputId = "rank",
                                        label = "Rank:", 
-                                       choices = seq(1, 41),
-                                       selected = c(1,41),
+                                       choices = seq(1, 50),
+                                       selected = c(1,10),
                                        grid = TRUE
                                      )
                                    ),
