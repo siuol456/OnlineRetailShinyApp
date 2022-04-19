@@ -1,6 +1,14 @@
-
 # create summary dataframe group by 'Country'
 .fn.country.summary = function(df, sort="Price", rank= c(1, 10)) {
+  numOfCountry = length(unique(df$Country))
+  
+  min = rank[1]
+  max = rank[2]
+  
+  if (max > numOfCountry) {
+    max = numOfCountry
+  }
+  
   df %>% 
     group_by(Country) %>%
     summarise(
@@ -11,8 +19,8 @@
     mutate(sort_column = .[[sort]]) %>%
     arrange(desc(sort_column)) %>%
     mutate(Rank=rank(desc(sort_column))) %>%
-    head(rank[2]) %>%
-    tail(rank[2] - rank[1] + 1) %>%
+    head(max) %>%
+    tail(max - min + 1) %>%
     mutate(
       `Ratio(%)` = round(sort_column/sum(sort_column)*100, 2)
     )
@@ -83,7 +91,6 @@
     )
 }
 
-
 # Function for Customer
 
 Customerplot <- function(df,y,m,n) {
@@ -103,4 +110,3 @@ Customerplot <- function(df,y,m,n) {
     geom_bar(stat="identity")  + geom_hline(yintercept = func_test$mean,color = "red")+
     theme(axis.text.x = element_text(size=10, angle=30))
 }
-
