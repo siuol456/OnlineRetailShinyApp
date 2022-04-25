@@ -1,35 +1,47 @@
-server <- function(input, output) {
+server <- function(input, output, session) {
   values <- reactiveValues(tbl=NULL,
                            data_a = NULL,
+                           tbltop = NULL,
+                           pltN = NULL,
+                           t8 = NULL,
                            prod_name = NULL,
                            tb12  =NULL,
+                           tb = NULL,
                            t=NULL,
                            tbl3=NULL,
                            tempCID = "18102"
                            )
   observeEvent(input$radio_cancel,{
     if(input$radio_cancel){
-    values$data_a <- df_cancel
+      values$data_a <- df_cancel
     }
     else{
       values$data_a <- df_net
       }
     })
   
+  observeEvent(c(values$data_a,input$dates),{
+    x <- top8_df(values$data_a,input$radio_cancel, input$radio_y)
+    values$tbltop <- x$data
+    values$plt_N <- x$plot_N
+    values$t8 <- top8(values$tbltop,input$dates[1], input$dates[2])
+  })
   output$plotChart <- renderPlotly({
-       top8_bar(values$data_a, input$dates[1], input$dates[2], input$radio_cancel, input$radio_y)$result
+       top8_plot(values$t8, values$plt_N)
   })
   
   output$products <- renderUI({
-    values$prod_name <- top8_bar(values$data_a, input$dates[1], input$dates[2], input$radio_cancel, input$radio_y)[["table"]]["Description"]
+    values$prod_name <- values$t8["Description"]
     selectInput(inputId = "products", label = "Products interested", 
                 choices = values$prod_name, 
                 multiple = FALSE)
   })
-  
-  output$plotTS <- renderPlotly({
-    week_ts(values$data_a, input$products)
+  observeEvent(input$products,{
+    output$plotTS <- renderPlotly({
+      week_ts(values$tbltop, input$products)
+    })
   })
+  
   
 #------  
   output$generalts <- renderPlotly({
@@ -102,6 +114,10 @@ server <- function(input, output) {
       values$t <- "Total Cancelation: "
     }
   }) 
+  observeEvent(values$data_a,{
+    values$tb <- cusrank(values$data_a,input$dates_C[1],
+                         input$dates_C[2])
+  })
   observeEvent(input$ind_obj, {
     updateTabsetPanel(inputId = "params", selected = input$ind_obj)
   }) 
@@ -117,10 +133,10 @@ server <- function(input, output) {
   })
   observeEvent(values$tbl2,{
     output$totalP <- renderText({
-      paste0(values$t," ",values$tbl2$Totalspend_each[1],"£")
+      paste0(values$t," ",sum(values$tbl2$Totalspend_each),"£")
     })
     output$CustomerT <- renderDataTable({
-      values$tbl2[,c(3:4)]
+      values$tbl2[,c(2:3)]
       },
       extensions = c('Scroller', 'FixedColumns'), options = list(
         deferRender = TRUE,
@@ -143,6 +159,11 @@ server <- function(input, output) {
         NULL
       }
     })
+    output$TopCP <- renderPlot({
+      cusrank_plot(values$tb,input$TopC,input$dates_C[1],
+                   input$dates_C[2])
+    })
+    
     
   })
   
@@ -151,35 +172,28 @@ server <- function(input, output) {
   }) 
   
 
-  output$TopCP <- renderPlot({
-    cusrank(values$data_a,input$dates_C[1],
-            input$dates_C[2],input$TopC)$P
-  })
   
   observeEvent(input$SR,{
-    values$tbl3 <- cusrank(values$data_a,input$dates_C[1],
-                    input$dates_C[2],input$TopC)$T %>%
+    values$tbl3 <- values$tb %>%
       filter(rank==input$SR)
   })
   
   observeEvent(values$tbl3,{
-    output$SRC <- renderDataTable({
-      cusspend(values$data_a,input$dates_C[1],
-               input$dates_C[2],values$tbl3$Customer.ID[1],10)[,c(3:4)]
-    },
-    extensions = c('Scroller', 'FixedColumns'), options = list(
-      deferRender = TRUE,
-      scrollX = TRUE,
-      scrollY = 200,
-      scroller = TRUE,
-      dom = 'Bfrtip',
-      fixedColumns = TRUE
-    )
-    )
+      output$SRC <- renderDataTable({
+        cusspend(values$data_a,input$dates_C[1],
+                 input$dates_C[2],values$tbl3$Customer.ID[1],10)[,c(2:3)]
+        },
+        extensions = c('Scroller', 'FixedColumns'), options = list(
+        deferRender = TRUE,
+        scrollX = TRUE,
+        scrollY = 200,
+        scroller = TRUE,
+        dom = 'Bfrtip',
+        fixedColumns = TRUE
+        )
+      )
+    
   })
-  
-  
-  
   
   
   
