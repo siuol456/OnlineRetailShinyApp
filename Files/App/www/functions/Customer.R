@@ -1,11 +1,10 @@
-cusrank <- function(df,start,end,n) {
+cusrank <- function(df,start,end) {
   func_test <- df %>% 
     filter(!is.na(Customer.ID)) %>%
     filter_at(colnames(df)[5],any_vars((.<end) &(.>start))) %>%
     group_by(Customer.ID) %>%
     summarize(Totalspend = sum(Quantity*Price)) %>%
-    mutate(rank = rank(-Totalspend)) %>%
-    filter(rank <= n) 
+    mutate(rank = rank(-Totalspend))
   
   allsum <- df %>% 
     filter(!is.na(Customer.ID)) %>%
@@ -20,12 +19,17 @@ cusrank <- function(df,start,end,n) {
   func_test$allmean <- allsum/countcus
   func_test$allmean <- unlist(func_test$allmean)
   func_test$Customer.ID <- factor(func_test$Customer.ID)
-  
+  return(func_test)
+}
+
+cusrank_plot <- function(df,n,start,end){
+  func_test <- df %>%
+    filter(rank<n)
   fig <- func_test %>%
     mutate(`Customer.ID` = fct_reorder(`Customer.ID`, desc(Totalspend))) %>%
     ggplot(aes(x = `Customer.ID`, y = Totalspend,fill = `Customer.ID`)) +
     geom_bar(stat="identity")  + 
-    labs(title=paste("Top",n, "Customer Spend from",start,"to",end),y="Total Spend(£)", subtitle =paste("mean:",round(func_test$allmean,2),"£"), color=NULL)+
+    labs(title=paste("Top",as.character(n), "Customer Spend from",start,"to",end),y="Total Spend(£)", subtitle =paste("mean:",round(func_test$allmean,2),"£"), color=NULL)+
     theme(
       # Top-right position
       legend.pos = c(0.575, 0.975),
@@ -49,26 +53,22 @@ cusrank <- function(df,start,end,n) {
       plot.caption = element_text(size = 11),
       axis.text.x = element_text(size=10, angle=30)
     )
-  return(list("P"=fig,"T"=func_test))
+  return(fig)
 }
 
 
 
 
 cusspend <- function(df,start,end,ID,R){
-  all <- df %>%
-    filter_at(colnames(df)[5],any_vars((.<end) &(.>start))) %>%
-    filter(Customer.ID == ID)%>%
-    summarize(Totalspend = sum(Quantity*Price))
   each <- df %>%
-    filter(df$InvoiceDate >= start & df$InvoiceDate <= end) %>%
+    filter_at(colnames(df)[5],any_vars((.<end) &(.>start))) %>%
     filter(Customer.ID == ID)%>%
     group_by(Customer.ID,Description) %>%
     summarize(Totalspend_each = sum(Quantity*Price)) %>%
     mutate(rank = dense_rank(-Totalspend_each)) %>%
     filter(rank <= R) %>%
     arrange(by=rank,desc=T)
-  cbind(all,each)
+  return(each)
 }
 
 

@@ -1,16 +1,15 @@
 #Function for top 8 report
-top8_bar <- function(df, start, end, cancel, value){
+top8_df <- function(df, cancel, value){
   
-  top <- df
+  top <- df_net 
+  nam <- colnames(top)
   if (value == "count") {
     
     top <- top %>% 
-      filter(top$InvoiceDate >= start & top$InvoiceDate <= end) %>%
-      select(Description, Quantity) %>%
-      dplyr::group_by(Description) %>%
+      select(Description, Quantity,ends_with('Date')) %>%
+      dplyr::group_by_at(nam[c(3,5)]) %>%
       dplyr::summarise(n = sum(Quantity)) 
     
-    top <- head(top[order(top$n, decreasing=T),], 8)
     if (cancel) {
       t = "Top 8 Cancellation"
     }
@@ -20,13 +19,12 @@ top8_bar <- function(df, start, end, cancel, value){
   }
   else if (value == "amount"){
     top <- top %>% 
-      filter(top$InvoiceDate >= start & top$InvoiceDate <= end) %>%
       mutate(Amount = Quantity*Price) %>%
-      select(Description, Amount) %>%
-      dplyr::group_by(Description) %>%
+      select(Description, Amount,ends_with('Date')) %>%
+      dplyr::group_by_at(nam[c(3,5)]) %>%
       dplyr::summarise(n = sum(Amount))
     
-    top <- head(top[order(top$n, decreasing=T),], 8)
+    
     if (cancel) {
       t = "Top 8 Deduction"
     }
@@ -34,33 +32,37 @@ top8_bar <- function(df, start, end, cancel, value){
       t ="Top 8 Revenue"
     }
   }
-  result <- plot_ly(
-    data = top, 
-    x = ~reorder(Description, -n), y = ~n, color = ~Description,
-    type = 'bar') %>%
-    layout(title = t)
+  return(list("data" = top, "plot_N" = t))
+} 
   
-  
-  result <- result %>% layout(showlegend = FALSE, 
-                              xaxis = list(title = "Description"))
-  
-  
-  return(list("result" = result, "table" = top))
-  
+top8 <- function(df,start, end){
+    top <-df %>% 
+      filter_at(colnames(df)[2],any_vars((.<end) &(.>start))) %>%
+      dplyr::group_by(Description) %>%
+      dplyr::summarise(n_ = sum(n))
+    top <- head(top[order(top$n_, decreasing=T),], 8)
+    return(top)
 }
 
+top8_plot <- function(df,N){
+  result <- plot_ly(
+    data = df, 
+    x = ~reorder(Description, -n_), y = ~n_, color = ~Description,
+    type = 'bar') %>%
+    layout(title = N)
+  result <- result %>% layout(showlegend = FALSE, 
+                              xaxis = list(title = "Description"))
+  return(result)
+}
 
 week_ts <- function(df, prod_name) {
   df_prod <- subset(df, Description == prod_name)
   
-  df_prod_ts <- df_prod %>% 
-    group_by_at(colnames(df_prod)[5]) %>% 
-    summarize(QuantityS = sum(Quantity))
   
   fig <- plot_ly()%>%
-    add_trace(data=df_prod_ts, type = 'scatter', mode = 'lines', fill = 'tozeroy', 
-              x = as.formula(paste0("~",colnames(df_prod_ts)[1])), 
-              y = ~QuantityS, name = prod_name)%>%
+    add_trace(data=df_prod, type = 'scatter', mode = 'lines', fill = 'tozeroy', 
+              x = as.formula(paste0("~",colnames(df_prod)[2])), 
+              y = ~n, name = prod_name)%>%
     layout(showlegend = F, 
            yaxis = list(zerolinecolor = '#ffff',
                         zerolinewidth = 2,
